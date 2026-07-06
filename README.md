@@ -15,14 +15,8 @@ chatbot_project/
 ## Step 1 — Set up your environment
 
 1. Make sure Python 3.9+ is installed: `python --version`
-2. Create a project folder and put all these files inside it (keep `templates/index.html` inside a `templates` folder — Flask requires that exact name).
-3. (Recommended) Create a virtual environment:
-   ```
-   python -m venv venv
-   venv\Scripts\activate      # Windows
-   source venv/bin/activate   # Mac/Linux
-   ```
-4. Install the required libraries:
+2. Create a project folder and put all these files inside it (keep `templates/index.html` inside a `templates` folder).
+3. Install the required libraries:
    ```
    pip install -r requirements.txt
    ```
@@ -51,23 +45,7 @@ Open `website_content.txt` afterward and skim it — this is literally the chatb
 - Try scraping specific sub-pages (e.g. `/services`, `/about`, `/cloud-solutions`) if they exist as separate URLs — some content may be server-rendered even if the homepage isn't.
 - Or use a browser-automation tool like `selenium` or `playwright` instead of `requests`, which can execute JavaScript before extracting text. That's an extension you can add later — not required for the base assignment.
 
-## Step 4 — Test the chatbot logic on its own (optional but useful for debugging)
-
-```
-python chatbot.py
-```
-
-This starts a simple command-line chat loop, so you can test your matching logic before wiring it into Flask. Type a question, see the answer, type `quit` to stop.
-
-How the matching works, in plain terms:
-1. The website text is split into small chunks (~1-2 sentences each).
-2. For each chunk, Claude/you extract the "important words" (skipping words like "the", "is", "does").
-3. When you ask a question, it's broken into important words the same way.
-4. The chunk(s) sharing the most important words with your question win, and get shown as the answer.
-
-This is a simple technique called **keyword overlap matching** — no machine learning needed, which is perfect for a beginner project.
-
-## Step 5 — Run the Flask app
+## Step 4 — Run the Flask app
 
 ```
 python app.py
@@ -78,7 +56,7 @@ Then open your browser to:
 http://127.0.0.1:5000
 ```
 
-Type a question in the box and click "Ask." The Flask route in `app.py`:
+Type a question in the box and click send. The Flask route in `app.py`:
 1. Reads the question from the form (`request.form.get("question")`)
 2. Passes it to `bot.answer(question)`
 3. Sends the answer back to `index.html` to display
@@ -94,13 +72,6 @@ If an answer looks wrong or irrelevant, it usually means:
 - The relevant text wasn't captured well by the scraper (check `website_content.txt`), or
 - The chunk size in `split_into_chunks()` is too big/small — try adjusting the `120` character threshold in `chatbot.py`.
 
-## Step 7 (optional) — Improve it further
-
-Once the basic version works, here are natural next upgrades for extra credit:
-- **Multi-page scraping**: loop over several URLs (About, Services, Cloud, AI/ML, Security, Automation pages) and combine their text.
-- **Better matching**: use `TfidfVectorizer` + cosine similarity from `scikit-learn` instead of plain keyword overlap — gives more accurate matches.
-- **Chat history**: store previous Q&A pairs in the Flask session to show a running conversation.
-- **Styling**: improve `index.html` with a chat-bubble UI instead of a single answer box.
 
 ## Troubleshooting
 
@@ -109,5 +80,4 @@ Once the basic version works, here are natural next upgrades for extra credit:
 | `FileNotFoundError: website_content.txt` | You ran `app.py` before `scraper.py` | Run `python scraper.py` first |
 | Empty/tiny `website_content.txt` | Site uses JavaScript rendering | See Step 3 note about Selenium/Playwright |
 | `ModuleNotFoundError: No module named 'bs4'` | Dependencies not installed | Run `pip install -r requirements.txt` |
-| Answers seem irrelevant | Chunking or keyword matching too coarse | Tune chunk size / stopwords in `chatbot.py` |
 | `TemplateNotFound: index.html` | `templates` folder missing or misnamed | Must be named exactly `templates`, in same folder as `app.py` |
