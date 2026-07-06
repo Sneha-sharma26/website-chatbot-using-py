@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phoenix Digital Technologies — Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #12141c;
+    --panel: #1a1d29;
+    --bubble-bot: #232838;
+    --ember-1: #ff5d3a;
+    --ember-2: #ff8a50;
+    --teal: #2bd9c2;
+    --text: #edeef2;
+    --text-muted: #8b90a3;
+    --border: #2a2e3d;
+  }
+ 
+  * { box-sizing: border-box; }
+ 
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+  }
+ 
+  .app {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+  }
+ 
+  /* ---------- Header ---------- */
+  .app-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+ 
+  .phoenix-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--ember-1), var(--ember-2));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+ 
+  .phoenix-mark svg { width: 20px; height: 20px; }
+ 
+  .header-text h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    letter-spacing: 0.2px;
+  }
+ 
+  .header-text p {
+    margin: 2px 0 0;
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+ 
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--teal);
+    display: inline-block;
+    margin-right: 5px;
+    box-shadow: 0 0 6px var(--teal);
+  }
+ 
+  /* ---------- Chat area ---------- */
+  .chat-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+ 
+  .row { display: flex; gap: 10px; align-items: flex-end; }
+  .row.user { justify-content: flex-end; }
+ 
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, var(--ember-1), var(--ember-2));
+  }
+  .avatar svg { width: 15px; height: 15px; }
+ 
+  .bubble {
+    max-width: 78%;
+    padding: 12px 15px;
+    border-radius: 14px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+  }
+ 
+  .bubble.bot {
+    background: var(--bubble-bot);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+ 
+  .bubble.user {
+    background: linear-gradient(135deg, var(--ember-1), var(--ember-2));
+    color: #1a0f0a;
+    font-weight: 500;
+    border-bottom-right-radius: 4px;
+  }
+ 
+  /* typing indicator */
+  .typing { display: flex; gap: 4px; padding: 4px 2px; }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-muted);
+    animation: bounce 1.2s infinite ease-in-out;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+ 
+  /* ---------- Suggested questions ---------- */
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 22px 16px;
+    flex-shrink: 0;
+  }
+  .chip {
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    color: var(--text);
+    background: var(--bubble-bot);
+    border: 1px solid var(--border);
+    padding: 7px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+  }
+  .chip:hover { border-color: var(--teal); color: var(--teal); }
+ 
+  /* ---------- Input bar ---------- */
+  .input-bar {
+    display: flex;
+    gap: 10px;
+    padding: 16px 22px 20px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+ 
+  #question-input {
+    flex: 1;
+    background: var(--bubble-bot);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 14.5px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+  }
+  #question-input:focus { border-color: var(--teal); }
+  #question-input::placeholder { color: var(--text-muted); }
+ 
+  #send-btn {
+    background: linear-gradient(135deg, var(--ember-1), var(--ember-2));
+    border: none;
+    color: #1a0f0a;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  #send-btn:hover { filter: brightness(1.08); }
+  #send-btn:disabled { opacity: 0.5; cursor: default; }
+  #send-btn svg { width: 18px; height: 18px; }
+ 
+  /* scrollbar */
+  .chat-area::-webkit-scrollbar { width: 6px; }
+  .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+
+
+<body>
+<div class="app">
+  <div class="app-header">
+    <div class="phoenix-mark">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C12 2 8 6 8 10.5C8 12.9853 9.79 15 12 15C14.21 15 16 12.9853 16 10.5C16 6 12 2 12 2Z" fill="white"/>
+        <path d="M12 15C12 15 6 17 5 21C5 21 9 22 12 20C15 22 19 21 19 21C18 17 12 15 12 15Z" fill="white" fill-opacity="0.85"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Phoenix Digital Assistant</h1>
+      <p><span class="status-dot"></span>Answering from the Phoenix Digital Technologies website</p>
+    </div>
+  </div>
+ 
+  <div class="chat-area" id="chat-area">
+    <div class="row bot">
+      <div class="avatar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 8 6 8 10.5C8 12.9853 9.79 15 12 15C14.21 15 16 12.9853 16 10.5C16 6 12 2 12 2Z" fill="white"/></svg>
+      </div>
+      <div class="bubble bot">
+        Hi! I can answer questions about Phoenix Digital Technologies — services, cloud, AI/ML, security, and automation. What would you like to know?
+      </div>
+    </div>
+  </div>
+ 
+  <div class="suggestions" id="suggestions">
+    <div class="chip" data-q="What services does the company provide?">What services do you provide?</div>
+    <div class="chip" data-q="Does the company provide cloud solutions?">Cloud solutions?</div>
+    <div class="chip" data-q="What is AI/ML service?">AI/ML services?</div>
+    <div class="chip" data-q="What security solutions are available?">Security solutions?</div>
+  </div>
+ 
+  <div class="input-bar">
+    <input type="text" id="question-input" placeholder="Ask about services, cloud, AI/ML, security..." autocomplete="off">
+    <button id="send-btn" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 2L11 13" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+ 
+</div>
+ 
+<script>
+const chatArea = document.getElementById('chat-area');
+const input = document.getElementById('question-input');
+const sendBtn = document.getElementById('send-btn');
+const suggestions = document.getElementById('suggestions');
+ 
+function scrollToBottom() {
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+ 
+function addMessage(text, sender) {
+  const row = document.createElement('div');
+  row.className = `row ${sender}`;
+ 
+  if (sender === 'bot') {
+    row.innerHTML = `
+      <div class="avatar">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 8 6 8 10.5C8 12.9853 9.79 15 12 15C14.21 15 16 12.9853 16 10.5C16 6 12 2 12 2Z" fill="white"/></svg>
+      </div>
+      <div class="bubble bot"></div>`;
+    row.querySelector('.bubble').textContent = text;
+  } else {
+    row.innerHTML = `<div class="bubble user"></div>`;
+    row.querySelector('.bubble').textContent = text;
+  }
+ 
+  chatArea.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+ 
+function addTypingIndicator() {
+  const row = document.createElement('div');
+  row.className = 'row bot';
+  row.id = 'typing-row';
+  row.innerHTML = `
+    <div class="avatar">
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C12 2 8 6 8 10.5C8 12.9853 9.79 15 12 15C14.21 15 16 12.9853 16 10.5C16 6 12 2 12 2Z" fill="white"/></svg>
+    </div>
+    <div class="bubble bot">
+      <div class="typing"><span></span><span></span><span></span></div>
+    </div>`;
+  chatArea.appendChild(row);
+  scrollToBottom();
+}
+ 
+function removeTypingIndicator() {
+  const row = document.getElementById('typing-row');
+  if (row) row.remove();
+}
+ 
+async function sendQuestion(question) {
+  if (!question.trim()) return;
+ 
+  addMessage(question, 'user');
+  input.value = '';
+  sendBtn.disabled = true;
+  suggestions.style.display = 'none';
+  addTypingIndicator();
+ 
+  try {
+    const response = await fetch('/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question })
+    });
+    const data = await response.json();
+    removeTypingIndicator();
+    addMessage(data.answer, 'bot');
+  } catch (err) {
+    removeTypingIndicator();
+    addMessage("Something went wrong reaching the server. Is app.py still running?", 'bot');
+  } finally {
+    sendBtn.disabled = false;
+    input.focus();
+  }
+}
+ 
+sendBtn.addEventListener('click', () => sendQuestion(input.value));
+input.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendQuestion(input.value);
+});
+suggestions.addEventListener('click', (e) => {
+  const chip = e.target.closest('.chip');
+  if (chip) sendQuestion(chip.dataset.q);
+});
+ 
+input.focus();
+</script>
+ 
+</body>
+</html>
