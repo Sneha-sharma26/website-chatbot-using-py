@@ -11,6 +11,8 @@ chatbot_project/
 ├── requirements.txt
 └── website_content.txt   # (created automatically after you run scraper.py)
 ```
+**Live Demo:**  
+https://your-app-name.onrender.com
 
 ## Step 1 — Set up your environment
 
