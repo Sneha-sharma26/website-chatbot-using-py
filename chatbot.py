@@ -11,6 +11,8 @@ import os
 
 CONTENT_FILE = "website_content.txt"
 
+CHUNK_DELIMITER = "\n<<<CHUNK>>>\n"
+
 STOPWORDS = {
     "a", "an", "the", "is", "are", "was", "were", "do", "does", "did",
     "what", "which", "who", "whom", "this", "that", "these", "those",
@@ -37,26 +39,8 @@ def load_content(filepath: str = CONTENT_FILE) -> str:
 
 
 def split_into_chunks(text: str) -> list[str]:
-    """
-    Break the big text blob into smaller pieces so we can compare
-    the user's question against each piece individually.
-
-    We split by line, then merge very short lines together so each
-    chunk has enough context to be a useful answer.
-    """
-    lines = [line.strip() for line in text.split("\n") if line.strip()]
-
-    chunks = []
-    buffer = ""
-    for line in lines:
-        buffer += (" " if buffer else "") + line
-        if len(buffer) > 120:
-            chunks.append(buffer)
-            buffer = ""
-    if buffer:
-        chunks.append(buffer)
-
-    return chunks
+    chunks = [c.strip() for c in text.split(CHUNK_DELIMITER)]
+    return [c for c in chunks if c]
 
 
 def get_keywords(text: str) -> set[str]:
@@ -92,7 +76,7 @@ class WebsiteChatbot:
         shared = question_keywords & chunk_kw
         return sum(self.word_weight.get(word, 0) for word in shared)
 
-    def answer(self, question: str, top_n: int = 2) -> str:
+    def answer(self, question: str, top_n: int = 3) -> str:
         """
         Compare the question's keywords against every chunk's keywords,
         weighted by how distinctive each word is. Return the chunk(s)

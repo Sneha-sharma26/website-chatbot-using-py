@@ -5,6 +5,7 @@
 4. Saves it into a local file called website_content.txt
 """
 
+import re
 import time
 from urllib.parse import urljoin, urlparse
 
@@ -16,7 +17,7 @@ URL = "https://phoenixdigitaltech.net/"
 OUTPUT_FILE = "website_content.txt"
 
 
-MAX_PAGES = 20
+MAX_PAGES = 40
 DELAY_BETWEEN_REQUESTS = 1.0
 
 # Some websites block requests that don't look like they come from a real browser.
@@ -36,6 +37,15 @@ def fetch_page(url: str) -> str:
     response.raise_for_status()  # throws an error if the request failed
     return response.text
 
+# Chunks are separated by this exact marker
+CHUNK_DELIMITER = "\n<<<CHUNK>>>\n"
+MIN_CHUNK_LENGTH = 25   # except for the headings
+
+CONTACT_PATTERN = re.compile(
+    r"[\w.+-]+@[\w-]+\.[\w.-]+"          # email address
+    r"|\+?\d[\d\-\s().]{7,}\d"           # phone number (7+ digits, allows spacing/punctuation)
+)
+
 def extract_text(html: str) -> str:
     """
     Turn raw HTML into clean, readable text.
@@ -44,33 +54,54 @@ def extract_text(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
 
     # Remove tags that don't contain useful readable text
-    for tag in soup(["script", "style", "noscript", "svg", "footer", "header",  "nav", "aside", "form", "button"]):
+    for tag in soup(["script", "style", "noscript", "svg", "header",  "nav", "aside", "form", "button"]):
         tag.decompose()
-
-    # get_text() pulls out all visible text; separator adds spacing
-    raw_text = soup.get_text(separator="\n")
-
-    # Clean up: remove empty lines and extra whitespace
-    lines = [line.strip() for line in raw_text.splitlines()]
-    lines = [line for line in lines if line]  # drop empty lines
     
     NAV_LABELS = {
-        "home", "who we are", "about", "about us", "contact",
+        "home", "who we are", "about", "about us",
         "contact us", "services", "careers", "blog", "login",
         "sign up", "get started", "menu", "search", "privacy policy",
         "terms of service", "terms & conditions", "read more",
         "learn more", "our partners",
     }
-    lines = [line for line in lines if line.lower() not in NAV_LABELS]
     
-    clean_text = "\n".join(lines)
+    chunks = []
+    current_chunk = []
+    seen = set()  # avoids saving the exact same line twice (e.g. repeated CTAs)
 
-    return clean_text
+    for tag in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "address"]):
+        # If a <li> contains a nested <ul>/<ol>, get_text() would grab ALL descendant items' text too, producing one giant blob instead of separate small items
+        # Strip nested lists firstso each menu item stays its own chunk.
+        if tag.name == "li" and tag.find(["ul", "ol"]):
+            tag_copy = BeautifulSoup(str(tag), "html.parser").find("li")
+            for nested_list in tag_copy.find_all(["ul", "ol"]):
+                nested_list.decompose()
+            text = tag_copy.get_text(separator=" ", strip=True)
+        else:
+            text = tag.get_text(separator=" ", strip=True)
+ 
+        text = " ".join(text.split())  # collapse extra whitespace
+ 
+        if not text or text.lower() in NAV_LABELS or text in seen:
+            continue
+ 
+        is_heading = tag.name in ("h1", "h2", "h3", "h4", "h5", "h6")
+        is_address_tag = tag.name == "address"
+        looks_like_contact = bool(CONTACT_PATTERN.search(text))
+        
+        if not (is_heading or is_address_tag or looks_like_contact) and len(text) < MIN_CHUNK_LENGTH:
+            continue
+ 
+        seen.add(text)
+        chunks.append(text)
+ 
+    return CHUNK_DELIMITER.join(chunks)
 
 def save_to_file(text: str, filename: str) -> None:
     with open(filename, "w", encoding="utf-8") as f:
         f.write(text)
-    print(f"Saved {len(text)} characters to {filename}")
+    num_chunks = len(text.split(CHUNK_DELIMITER)) if text else 0
+    print(f"Saved {num_chunks} content chunks to {filename}")
 
 
 # Multi-page crawling helpers
@@ -116,7 +147,8 @@ def main():
 
     to_visit = [normalize_url(URL)]
     visited = set()
-    all_text_parts = []
+    all_chunks = []
+    seen_across_pages = set()  # avoid saving the exact same chunk from multiple pages
 
     while to_visit and len(visited) < MAX_PAGES:
         page_url = to_visit.pop(0)
@@ -124,16 +156,19 @@ def main():
             continue
         visited.add(page_url)
 
-        print(f"  Fetching ({len(visited)}/{MAX_PAGES}): {page_url}")
+        print(f"Fetching ({len(visited)}/{MAX_PAGES}): {page_url}")
         try:
             html = fetch_page(page_url)
         except requests.exceptions.RequestException as e:
             print(f"Skipped (couldn't fetch): {e}")
             continue
 
-        text = extract_text(html)
-        if text:
-            all_text_parts.append(text)
+        page_text = extract_text(html)
+        if page_text:
+            for chunk in page_text.split(CHUNK_DELIMITER):
+                if chunk not in seen_across_pages:
+                    seen_across_pages.add(chunk)
+                    all_chunks.append(chunk)
 
         # Queue up any new internal links found on this page
         for link in get_internal_links(html, page_url):
@@ -144,7 +179,7 @@ def main():
 
     print(f"Crawled {len(visited)} page(s) total.")
 
-    combined_text = "\n".join(all_text_parts)
+    combined_text = CHUNK_DELIMITER.join(all_chunks)
 
     if not combined_text:
         print("No text was extracted.")
